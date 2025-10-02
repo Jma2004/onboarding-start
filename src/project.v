@@ -36,14 +36,19 @@ module tt_um_uw_onboarding_joshua_ma (
     .pwm_duty_cycle(pwm_duty_cycle),
     .out({uio_out, uo_out})
   );
-  // Add uio_in and ui_in[7:3] to the list of unused signals:
-  wire _unused = &{ena, ui_in[7:3], uio_in, 1'b0};
-  // All output pins must be assigned. If not used, assign to 0.
-  assign uo_out  = ui_in + uio_in;  // Example: ou_out is the sum of ui_in and uio_in
-  assign uio_out = 0;
-  assign uio_oe  = 0;
 
-  // List all unused inputs to prevent warnings
-  wire _unused = &{ena, clk, rst_n, 1'b0};
+  spi_peripheral spi_peripheral_inst (
+    .clk(clk),
+    .ncs(ui_in[2]),
+    .sclk(ui_in[0]),
+    .copi(ui_in[1]),
+    .en_reg_out_7_0(en_reg_out_7_0),
+    .en_reg_out_15_8(en_reg_out_15_8),
+    .en_reg_pwm_7_0(en_reg_pwm_7_0),
+    .en_reg_pwm_15_8(en_reg_pwm_15_8),
+    .pwm_duty_cycle(pwm_duty_cycle)
+  );
+  // Add uio_in and ui_in[7:3] to the list of unused signals:
+  wire _unused = &{ena, ui_in[7:3], uio_in, 1'b0};  
 
 endmodule
