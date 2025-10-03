@@ -21,7 +21,7 @@ reg ncs_sync_1, ncs_sync_2,
     copi_sync_1, copi_sync_2;
 wire sclk_pos_edge, nCs_posedge;
 assign sclk_pos_edge = (sclk_sync_1 == 0 && sclk_sync_2 == 1) ? 1 : 0;
-assign nCs_posedge = (ncs_sync_1 == 0 && ncs_sync_2 == 1) ? 1 : 0;
+assign ncs_posedge = (ncs_sync_1 == 0 && ncs_sync_2 == 1) ? 1 : 0;
 //2 stage ff chain    
 always @ (posedge clk) begin
     if (!rst_n) begin
@@ -48,7 +48,7 @@ always @(posedge clk or negedge rst_n) begin
         address <= 7'b0000000;
         data <= 8'b00000000;
         transaction_ready <= 1'b0;
-    end else if (nCS_sync2 == 1'b0) begin
+    end else if (ncs_sync2 == 1'b0) begin
         if(sclk_pos_edge)begin
             if (counter == 0)begin
                 //consume r/w bit
@@ -61,7 +61,7 @@ always @(posedge clk or negedge rst_n) begin
         end
     end else begin
         // When nCS goes high (transaction ends), validate the complete transaction
-        if (nCs_posedge) begin
+        if (ncs_posedge) begin
             transaction_ready <= 1'b1;
         end else if (transaction_processed) begin
             // Clear ready flag once processed
