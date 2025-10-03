@@ -91,34 +91,14 @@ always @(posedge clk or negedge rst_n) begin
         // Transaction is ready and not yet processed
         if(address <= 4)begin
             if(address == 0)begin
-                en_reg_pwm_7_0 <= 0;
-                en_reg_pwm_15_8 <= 0;
                 en_reg_out_7_0 <= data;
-                en_reg_out_15_8 <= 0;
-                pwm_duty_cycle <= 0;
             end else if (address == 1) begin
-                en_reg_pwm_7_0 <= 0;
-                en_reg_pwm_15_8 <= 0;
-                en_reg_out_7_0 <= 0;
                 en_reg_out_15_8 <= data;
-                pwm_duty_cycle <= 0;
             end else if (address == 2) begin
                 en_reg_pwm_7_0 <= data;
-                en_reg_pwm_15_8 <= 0;
-                en_reg_out_7_0 <= 0;
-                en_reg_out_15_8 <= 0;
-                pwm_duty_cycle <= 0;
             end else if (address == 3) begin
-                en_reg_pwm_7_0 <= 0;
                 en_reg_pwm_15_8 <= data;
-                en_reg_out_7_0 <= 0;
-                en_reg_out_15_8 <= 0;
-                pwm_duty_cycle <= 0;
             end else if (address == 4) begin
-                en_reg_pwm_7_0 <= 0;
-                en_reg_pwm_15_8 <= 0;
-                en_reg_out_7_0 <= 0;
-                en_reg_out_15_8 <= 0;
                 pwm_duty_cycle <= data;
             end
         end
