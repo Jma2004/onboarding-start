@@ -39,7 +39,7 @@ always @ (posedge clk) begin
         sclk_sync_1 <= sclk;
         sclk_sync_2 <= sclk_sync_1;
         copi_sync_1 <= copi;
-        copi_sync_2 <= copi_sync_2;
+        copi_sync_2 <= copi_sync_1;
     end
 end
 
@@ -50,14 +50,14 @@ always @(posedge clk or negedge rst_n) begin
         address <= 7'b0000000;
         data <= 8'b00000000;
         transaction_ready <= 1'b0;
-    end else if (ncs_sync2 == 1'b0) begin
+    end else if (ncs_sync_2 == 1'b0) begin
         if(sclk_pos_edge)begin
             if (counter == 0)begin
                 //consume r/w bit
             end else if (counter <= 7) begin
-                address[counter-1] <= copi_sync_2;
+                address <= {copi_sync_2, address[5:0]};
             end else begin
-                data[counter-8] <= copi_sync_2;
+                data <= {copi_sync_2, data[6:0]};
             end
             counter <= counter + 1;
         end
@@ -65,6 +65,7 @@ always @(posedge clk or negedge rst_n) begin
         // When nCS goes high (transaction ends), validate the complete transaction
         if (ncs_posedge) begin
             transaction_ready <= 1'b1;
+            counter <= 0;
         end else if (transaction_processed) begin
             // Clear ready flag once processed
             transaction_ready <= 1'b0;
