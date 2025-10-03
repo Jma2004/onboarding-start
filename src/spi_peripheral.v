@@ -1,5 +1,6 @@
 module spi_peripheral (
     input wire        clk,
+    input wire        rst_n,
     input wire        ncs,
     input wire        sclk,
     input wire        copi,
@@ -9,81 +10,118 @@ module spi_peripheral (
     output reg [7:0] en_reg_pwm_15_8,
     output reg [7:0] pwm_duty_cycle
 );
-localparam MAX_ADDRESS = 4;
-reg [3:0] counter  = 0;
-reg [6:0] address;
-reg [7:0] data;
-reg transaction_complete;
-reg r_ncs_1, r_ncs_2,
-    r_sclk_1, r_sclk_2,
-    r_copi_1, r_copi_2;
-
-//2 stage ff chain
-always @ (posedge clk)begin
-    r_ncs_1 <= ncs;
-    r_ncs_2 <= r_ncs_1;
-
-    r_sclk_1 <= sclk;
-    r_sclk_2 <= r_sclk_1;
-
-    r_copi_1 <= copi;
-    r_copi_2 <= r_copi_1;
-end
-
-always @ (posedge r_sclk_2) begin
-    //sample data
-    if(r_ncs_2)begin
-        counter <= 0;
-        address <= 0;
-        data <= 0;
-        transaction_complete <= 0;
+localparam MAX_ADDRESS = 4'b1111;
+reg [3:0] counter = 4'b0000;
+reg [6:0] address = 7'b0000000;
+reg [7:0] data = 8'b00000000;
+reg transaction_ready = 1'b0;
+reg transaction_processed = 1'b0;
+reg ncs_sync_1, ncs_sync_2,
+    sclk_sync_1, sclk_sync_2,
+    copi_sync_1, copi_sync_2;
+wire sclk_pos_edge, nCs_posedge;
+assign sclk_pos_edge = (sclk_sync_1 == 0 && sclk_sync_2 == 1) ? 1 : 0;
+assign nCs_posedge = (ncs_sync_1 == 0 && ncs_sync_2 == 1) ? 1 : 0;
+//2 stage ff chain    
+always @ (posedge clk) begin
+    if (!rst_n) begin
+        ncs_sync_1 <= 1'b0;
+        ncs_sync_2 <= 1'b0;
+        sclk_sync_1 <= 1'b0;
+        sclk_sync_2 <= 1'b0;
+        copi_sync_1 <= 1'b0;
+        copi_sync_2 <= 1'b0;
     end else begin
-        if (counter == 0)begin
-            //sample R/W bit
-        end else if(counter <= 7) begin
-            address[counter - 1] <= r_copi_2; 
-        end else begin
-            data[counter - 8] <= r_copi_2;
-        end
-        counter <= counter + 1;
-        if (counter == 15) transaction_complete <= 1;
+        ncs_sync_1 <= ncs;
+        ncs_sync_2 <= ncs_sync_1;
+        sclk_sync_1 <= sclk;
+        sclk_sync_2 <= sclk_sync_1;
+        copi_sync_1 <= copi;
+        copi_sync_2 <= copi_sync_2;
     end
 end
 
-always @ (posedge r_ncs_2) begin
-    if (transaction_complete && address <= MAX_ADDRESS) begin
-        if (address == 0) begin
-            en_reg_out_7_0 <= data;
-            en_reg_out_15_8 <= 0;
-            en_reg_pwm_7_0 <= 0;
-            en_reg_pwm_15_8 <= 0;
-            pwm_duty_cycle <= 0;
-        end else if (address == 1) begin
-            en_reg_out_7_0 <= 0;
-            en_reg_out_15_8 <= data;
-            en_reg_pwm_7_0 <= 0;
-            en_reg_pwm_15_8 <= 0;
-            pwm_duty_cycle <= 0;
-        end else if (address == 2) begin
-            en_reg_out_7_0 <= 0;
-            en_reg_out_15_8 <= 0;
-            en_reg_pwm_7_0 <= data;
-            en_reg_pwm_15_8 <= 0;
-            pwm_duty_cycle <= 0;
-        end else if (address == 3) begin
-            en_reg_out_7_0 <= 0;
-            en_reg_out_15_8 <= 0;
-            en_reg_pwm_7_0 <= 0;
-            en_reg_pwm_15_8 <= data;
-            pwm_duty_cycle <= 0;
-        end else if (address == 4) begin
-            en_reg_out_7_0 <= 0;
-            en_reg_out_15_8 <= 0;
-            en_reg_pwm_7_0 <= 0;
-            en_reg_pwm_15_8 <= 0;
-            pwm_duty_cycle <= data;
+// Process SPI protocol in the clk domain
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        counter <= 4'b0000;
+        address <= 7'b0000000;
+        data <= 8'b00000000;
+        transaction_ready <= 1'b0;
+    end else if (nCS_sync2 == 1'b0) begin
+        if(sclk_pos_edge)begin
+            if (counter == 0)begin
+                //consume r/w bit
+            end else if (counter <= 7) begin
+                address[counter-1] <= copi_sync_2;
+            end else begin
+                data[counter-8] <= copi_sync_2;
+            end
+            counter <= counter + 1;
         end
-    end 
+    end else begin
+        // When nCS goes high (transaction ends), validate the complete transaction
+        if (nCs_posedge) begin
+            transaction_ready <= 1'b1;
+        end else if (transaction_processed) begin
+            // Clear ready flag once processed
+            transaction_ready <= 1'b0;
+        end
+        // omitted code
+    end
 end
 
+// Update registers only after the complete transaction has finished and been validated
+always @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        // omitted code
+        transaction_processed <= 1'b0;
+        en_reg_pwm_7_0 <= 0;
+        en_reg_pwm_15_8 <= 0;
+        en_reg_out_7_0 <= 0;
+        en_reg_out_15_8 <= 0;
+        en_reg_pwm_7_0 <= 0;
+        en_reg_pwm_15_8 <= 0;
+    end else if (transaction_ready && !transaction_processed) begin
+        // Transaction is ready and not yet processed
+        if(address <= 4)begin
+            if(address == 0)begin
+                en_reg_pwm_7_0 <= 0;
+                en_reg_pwm_15_8 <= 0;
+                en_reg_out_7_0 <= data;
+                en_reg_out_15_8 <= 0;
+                pwm_duty_cycle <= 0;
+            end else if (address == 1) begin
+                en_reg_pwm_7_0 <= 0;
+                en_reg_pwm_15_8 <= 0;
+                en_reg_out_7_0 <= 0;
+                en_reg_out_15_8 <= data;
+                pwm_duty_cycle <= 0;
+            end else if (address == 2) begin
+                en_reg_pwm_7_0 <= data;
+                en_reg_pwm_15_8 <= 0;
+                en_reg_out_7_0 <= 0;
+                en_reg_out_15_8 <= 0;
+                pwm_duty_cycle <= 0;
+            end else if (address == 3) begin
+                en_reg_pwm_7_0 <= 0;
+                en_reg_pwm_15_8 <= data;
+                en_reg_out_7_0 <= 0;
+                en_reg_out_15_8 <= 0;
+                pwm_duty_cycle <= 0;
+            end else if (address == 4) begin
+                en_reg_pwm_7_0 <= 0;
+                en_reg_pwm_15_8 <= 0;
+                en_reg_out_7_0 <= 0;
+                en_reg_out_15_8 <= 0;
+                pwm_duty_cycle <= data;
+            end
+        end
+        // Set the processed flag
+        transaction_processed <= 1'b1;
+    end else if (!transaction_ready && transaction_processed) begin
+        // Reset processed flag when ready flag is cleared
+        transaction_processed <= 1'b0;
+    end
+end
 endmodule
