@@ -22,6 +22,7 @@ reg sclk_sync_1;
 reg sclk_sync_2;
 reg copi_sync_1, copi_sync_2;
 wire sclk_pos_edge, ncs_posedge;
+reg ncs_posedge_sync;
 assign sclk_pos_edge = (sclk_sync_1 == 1 && sclk_sync_2 == 0) ? 1 : 0;
 assign ncs_posedge = (ncs_sync_1 == 1 && ncs_sync_2 == 0) ? 1 : 0;
 //2 stage ff chain    
@@ -33,6 +34,7 @@ always @ (posedge clk) begin
         sclk_sync_2 <= 1'b0;
         copi_sync_1 <= 1'b0;
         copi_sync_2 <= 1'b0;
+        ncs_posedge_sync <= 1'b0;
     end else begin
         ncs_sync_1 <= ncs;
         ncs_sync_2 <= ncs_sync_1;
@@ -40,6 +42,7 @@ always @ (posedge clk) begin
         sclk_sync_2 <= sclk_sync_1;
         copi_sync_1 <= copi;
         copi_sync_2 <= copi_sync_1;
+        ncs_posedge_sync <= ncs_posedge;
     end
 end
 
@@ -83,8 +86,7 @@ always @(posedge clk or negedge rst_n) begin
         en_reg_pwm_15_8 <= 0;
         en_reg_out_7_0 <= 0;
         en_reg_out_15_8 <= 0;
-        en_reg_pwm_7_0 <= 0;
-        en_reg_pwm_15_8 <= 0;
+        pwm_duty_cycle <= 0;
     end else if (transaction_ready && !transaction_processed) begin
         // Transaction is ready and not yet processed
         if(address <= 4)begin
