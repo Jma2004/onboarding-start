@@ -16,17 +16,19 @@ reg [6:0] address = 7'b0000000;
 reg [7:0] data = 8'b00000000;
 reg transaction_ready = 1'b0;
 reg transaction_processed = 1'b0;
-reg ncs_sync_1, ncs_sync_2,
-    sclk_sync_1, sclk_sync_2,
-    copi_sync_1, copi_sync_2;
-wire sclk_pos_edge, nCs_posedge;
+reg ncs_sync_1 = 1;
+reg ncs_sync_2 = 1;
+reg sclk_sync_1 = 1;
+reg sclk_sync_2 = 1;
+reg copi_sync_1, copi_sync_2;
+wire sclk_pos_edge, ncs_posedge;
 assign sclk_pos_edge = (sclk_sync_1 == 0 && sclk_sync_2 == 1) ? 1 : 0;
 assign ncs_posedge = (ncs_sync_1 == 0 && ncs_sync_2 == 1) ? 1 : 0;
 //2 stage ff chain    
 always @ (posedge clk) begin
     if (!rst_n) begin
-        ncs_sync_1 <= 1'b0;
-        ncs_sync_2 <= 1'b0;
+        ncs_sync_1 <= 1'b1;
+        ncs_sync_2 <= 1'b1;
         sclk_sync_1 <= 1'b0;
         sclk_sync_2 <= 1'b0;
         copi_sync_1 <= 1'b0;
