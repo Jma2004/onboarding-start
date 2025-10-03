@@ -66,7 +66,7 @@ always @(posedge clk or negedge rst_n) begin
         end
     end else begin
         // When nCS goes high (transaction ends), validate the complete transaction
-        if (ncs_posedge) begin
+        if (ncs_posedge_sync) begin
             transaction_ready <= 1'b1;
             counter <= 0;
         end else if (transaction_processed) begin
