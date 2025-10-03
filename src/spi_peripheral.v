@@ -23,7 +23,7 @@ reg sclk_sync_2;
 reg copi_sync_1, copi_sync_2;
 wire sclk_pos_edge, ncs_posedge;
 assign sclk_pos_edge = (sclk_sync_1 == 1 && sclk_sync_2 == 0) ? 1 : 0;
-assign ncs_posedge = (ncs_sync_1 == 0 && ncs_sync_2 == 1) ? 1 : 0;
+assign ncs_posedge = (ncs_sync_1 == 1 && ncs_sync_2 == 0) ? 1 : 0;
 //2 stage ff chain    
 always @ (posedge clk) begin
     if (!rst_n) begin
@@ -55,9 +55,9 @@ always @(posedge clk or negedge rst_n) begin
             if (counter == 0)begin
                 //consume r/w bit
             end else if (counter <= 7) begin
-                address <= {copi_sync_2, address[5:0]};
+                address <= {address[5:0], copi_sync_2};
             end else begin
-                data <= {copi_sync_2, data[6:0]};
+                data <= {data[6:0], copi_sync_2};
             end
             counter <= counter + 1;
         end
