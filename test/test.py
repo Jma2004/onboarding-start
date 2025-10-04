@@ -174,9 +174,9 @@ async def test_pwm_freq(dut):
     ui_in_val = await send_spi_transaction(dut, 1, 0x02, 0xFF) #Enable PWM
     ui_in_val = await send_spi_transaction(dut, 1, 0x04, 0x0F) #Set PWM to 50%
     #Record time between edges
-    await RisingEdge(dut.uo_out)
+    await cocotb.triggers.with_timeout(RisingEdge(dut.uo_out), 400000, "ns")
     rising_edge_1 = cocotb.utils.get_sim_time(units="ns")
-    await RisingEdge(dut.uo_out)
+    await cocotb.triggers.with_timeout(RisingEdge(dut.uo_out), 400000, "ns")
     rising_edge_2 = cocotb.utils.get_sim_time(units="ns")
     assert (rising_edge_2 - rising_edge_1 <= 336700 and rising_edge_2 - rising_edge_1 >= 330033), f"Rising Edge 1: {rising_edge_1}, Rising Edge 2: {rising_edge_2}"
     dut._log.info("PWM Frequency test completed successfully")
@@ -211,11 +211,11 @@ async def test_pwm_duty(dut):
         await ClockCycles(dut.clk, 1)
 
     #50% duty cycle
-    ui_in_val = await send_spi_transaction(dut, 1, 0x04, 0x0F) #Set PWM to 0%
-    await RisingEdge(dut.uo_out)
+    ui_in_val = await send_spi_transaction(dut, 1, 0x04, 0x0F) #Set PWM to 50%
+    await cocotb.triggers.with_timeout(RisingEdge(dut.uo_out), 400000, "ns")
     start_time = cocotb.utils.get_sim_time(units="ns")
     dut._log.info(f"high time start at {start_time}")
-    await dut.uo_out.falling_edge
+    await cocotb.triggers.with_timeout(dut.uo_out.falling_edge, 400000, "ns")
     end_time = cocotb.utils.get_sim_time(units="ns")
     dut._log.info(f"high time end at {end_time}")
     duty_cycle = ((end_time - start_time)/333333.3)*100
