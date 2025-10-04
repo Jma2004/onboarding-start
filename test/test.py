@@ -170,9 +170,9 @@ async def test_pwm_freq(dut):
     await ClockCycles(dut.clk, 5)
 
     dut._log.info("Write transaction, address 0x00, data 0xFF")
-    ui_in_val = await send_spi_transaction(dut, 1, 0x00, 0xFF)  # Write transaction
     ui_in_val = await send_spi_transaction(dut, 1, 0x02, 0xFF) #Enable PWM
     ui_in_val = await send_spi_transaction(dut, 1, 0x04, 0x0F) #Set PWM to 50%
+    ui_in_val = await send_spi_transaction(dut, 1, 0x00, 0xFF)  # Write transaction
     await ClockCycles(dut.clk, 40000)
     #Record time between edges
     # await cocotb.triggers.with_timeout(RisingEdge(dut.uo_out), 400000, "ns")
@@ -191,17 +191,6 @@ async def test_pwm_duty(dut):
     clock = Clock(dut.clk, 100, units="ns")
     cocotb.start_soon(clock.start())
 
-    # Reset
-    dut._log.info("Reset")
-    dut.ena.value = 1
-    ncs = 1
-    bit = 0
-    sclk = 0
-    dut.ui_in.value = ui_in_logicarray(ncs, bit, sclk)
-    dut.rst_n.value = 0
-    await ClockCycles(dut.clk, 5)
-    dut.rst_n.value = 1
-    await ClockCycles(dut.clk, 5)
     #0% duty cycle
     dut._log.info("Set PWM duty cycle to 0 for uo_out")
     ui_in_val = await send_spi_transaction(dut, 1, 0x00, 0xFF)  # Write transaction
