@@ -174,10 +174,6 @@ async def test_pwm_freq(dut):
     ui_in_val = await send_spi_transaction(dut, 1, 0x02, 0xFF) #Enable PWM
     ui_in_val = await send_spi_transaction(dut, 1, 0x04, 0x0F) #Set PWM to 50%
     #Record time between edges
-    ncs = 0
-    sclk = 0
-    bit = 0
-    dut.ui_in.value = ui_in_logicarray(ncs, bit, sclk)
     await RisingEdge(dut.uo_out)
     rising_edge_1 = cocotb.utils.get_sim_time(units="ns")
     await RisingEdge(dut.uo_out)
