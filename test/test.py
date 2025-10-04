@@ -172,13 +172,13 @@ async def test_pwm_freq(dut):
     dut._log.info("Write transaction, address 0x00, data 0xFF")
     ui_in_val = await send_spi_transaction(dut, 1, 0x02, 0xFF) #Enable PWM
     ui_in_val = await send_spi_transaction(dut, 1, 0x04, 0x80) #Set PWM to 50%
-    ui_in_val = await send_spi_transaction(dut, 1, 0x00, 0xFF)  # Write transaction
+    ui_in_val = await send_spi_transaction(dut, 1, 0x00, 0xFF) # Write transaction
     #Record time between edges
-    await cocotb.triggers.with_timeout(RisingEdge(dut.uo_out), 400000, "ns")
+    await dut.uo_out.rising_edge
     rising_edge_1 = cocotb.utils.get_sim_time(units="ns")
-    await cocotb.triggers.with_timeout(RisingEdge(dut.uo_out), 400000, "ns")
+    await dut.uo_out.rising_edge
     rising_edge_2 = cocotb.utils.get_sim_time(units="ns")
-    assert (rising_edge_2 - rising_edge_1 <= 336700 and rising_edge_2 - rising_edge_1 >= 330033), f"Rising Edge 1: {rising_edge_1}, Rising Edge 2: {rising_edge_2}"
+    assert (330033 <= rising_edge_2 - rising_edge_1 <= 336700), f"Rising Edge 1: {rising_edge_1}, Rising Edge 2: {rising_edge_2}"
     dut._log.info("PWM Frequency test completed successfully")
 
 
@@ -189,6 +189,16 @@ async def test_pwm_duty(dut):
     # Set the clock period to 100 ns (10 MHz)
     clock = Clock(dut.clk, 100, units="ns")
     cocotb.start_soon(clock.start())
+    dut._log.info("Reset")
+    dut.ena.value = 1
+    ncs = 1
+    bit = 0
+    sclk = 0
+    dut.ui_in.value = ui_in_logicarray(ncs, bit, sclk)
+    dut.rst_n.value = 0
+    await ClockCycles(dut.clk, 5)
+    dut.rst_n.value = 1
+    await ClockCycles(dut.clk, 5)
 
     #0% duty cycle
     dut._log.info("Set PWM duty cycle to 0 for uo_out")
@@ -208,7 +218,7 @@ async def test_pwm_duty(dut):
     end_time = cocotb.utils.get_sim_time(units="ns")
     dut._log.info(f"high time end at {end_time}")
     duty_cycle = ((end_time - start_time)/333333.3)*100
-    assert (duty_cycle >= 49.5 and duty_cycle <= 50.5), f"Duty Cycle not around 50%, got {duty_cycle}"
+    assert (49.5 <=duty_cycle <= 50.5), f"Duty Cycle not around 50%, got {duty_cycle}"
 
     #100% duty cycle
     dut._log.info("100 duty cycle test start")
