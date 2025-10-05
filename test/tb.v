@@ -27,6 +27,8 @@ module tb ();
   wire VGND = 1'b0;
 `endif
 
+  wire uo_out_0;
+  assign uo_out_0 = uo_out[0];
   // Replace tt_um_example with your module name:
   tt_um_uw_onboarding_joshua_ma user_project (
 
